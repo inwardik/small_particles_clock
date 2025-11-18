@@ -26,21 +26,21 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Установка размера canvas
+        // Set canvas size
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Константы
+        // Constants
         const PARTICLE_COUNT = 600;
         const PARTICLE_SIZE = 2;
-        const PARTICLES_PER_POINT = 3; // Количество частиц на каждую точку паттерна для толщины линий
-        const GATHER_DURATION = 20000; // Длительность сборки в мс
-        const TREMBLE_DURATION = 4000; // Длительность дрожания в мс
-        const SCATTER_DURATION = 5000; // Длительность разброса в мс
-        const RANDOM_MOVEMENT_DURATION = 6000; // Случайное движение 6 секунд
+        const PARTICLES_PER_POINT = 3; // Number of particles per pattern point for line thickness
+        const GATHER_DURATION = 20000; // Gathering duration in ms
+        const TREMBLE_DURATION = 4000; // Trembling duration in ms
+        const SCATTER_DURATION = 5000; // Scattering duration in ms
+        const RANDOM_MOVEMENT_DURATION = 6000; // Random movement 6 seconds
         const CYCLE_DURATION = GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION + RANDOM_MOVEMENT_DURATION;
 
-        // Определение цифр в виде точек на сетке 7x5
+        // Define digits as points on a 7x5 grid
         const digitPatterns = {
             '0': [
                 [1,1,1,1,1],
@@ -377,30 +377,30 @@
             ]
         };
 
-        // Класс частицы
+        // Particle class
         class Particle {
             constructor() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
                 this.targetX = this.x;
                 this.targetY = this.y;
-                this.homeX = this.x; // Домашняя позиция для дрожания
+                this.homeX = this.x; // Home position for trembling
                 this.homeY = this.y;
-                this.vx = 0; // Начинаем без движения
-                this.vy = 0; // Начинаем без движения
+                this.vx = 0; // Start without movement
+                this.vy = 0; // Start without movement
                 this.trembleOffsetX = 0;
                 this.trembleOffsetY = 0;
-                this.tremblePhase = Math.random() * Math.PI * 2; // Случайная начальная фаза
+                this.tremblePhase = Math.random() * Math.PI * 2; // Random initial phase
                 this.color = `hsl(${Math.random() * 60 + 180}, 70%, 60%)`;
             }
 
-            // Случайное движение с плавным замедлением
+            // Random movement with smooth deceleration
             moveRandomly(slowdown = 1) {
-                // Плавно изменяем скорость (уменьшили изменение для более плавного движения)
+                // Smoothly change velocity (reduced change for smoother movement)
                 this.vx += (Math.random() - 0.5) * 0.05;
                 this.vy += (Math.random() - 0.5) * 0.05;
 
-                // Ограничиваем максимальную скорость (уменьшили для возможности следить за частицей)
+                // Limit maximum speed (reduced for better tracking)
                 const maxSpeed = 2 * slowdown;
                 this.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.vx));
                 this.vy = Math.max(-maxSpeed, Math.min(maxSpeed, this.vy));
@@ -408,7 +408,7 @@
                 this.x += this.vx;
                 this.y += this.vy;
 
-                // Мягкий отскок от границ
+                // Soft bounce from edges
                 if (this.x < 0 || this.x > canvas.width) {
                     this.vx *= -0.8;
                     this.x = Math.max(0, Math.min(canvas.width, this.x));
@@ -419,22 +419,22 @@
                 }
             }
 
-            // Движение к целевой позиции
+            // Move to target position
             moveToTarget(speed = 0.5) {
                 const dx = this.targetX - this.x;
                 const dy = this.targetY - this.y;
                 this.x += dx / 5 * speed;
                 this.y += dy / 5 * speed;
 
-                // Плавно замедляем линейную скорость при приближении к цели
+                // Smoothly slow down linear velocity when approaching target
                 this.vx *= 0.99;
                 this.vy *= 0.99;
             }
 
-            // Дрожание в домашней позиции
+            // Tremble at home position
             tremble(time) {
                 this.tremblePhase += 0.05;
-                const trembleAmount = 3; // Амплитуда дрожания
+                const trembleAmount = 3; // Trembling amplitude
 
                 this.trembleOffsetX = Math.sin(this.tremblePhase) * trembleAmount;
                 this.trembleOffsetY = Math.cos(this.tremblePhase * 1.3) * trembleAmount;
@@ -443,7 +443,7 @@
                 this.y = this.homeY + this.trembleOffsetY;
             }
 
-            // Отрисовка частицы
+            // Draw particle
             draw() {
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
@@ -452,21 +452,21 @@
             }
         }
 
-        // Создание частиц
+        // Create particles
         const particles = [];
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             particles.push(new Particle());
         }
 
-        // Переменные для чередования
-        let showTime = true; // Начинаем с времени
-        let currentRandomText = ''; // Текущий случайный текст
-        let cycleCount = 0; // Счетчик циклов
+        // Variables for alternation
+        let showTime = true; // Start with time
+        let currentRandomText = ''; // Current random text
+        let cycleCount = 0; // Cycle counter
 
-        // Назначаем цели сразу, чтобы избежать начального взрыва
+        // Assign targets immediately to avoid initial explosion
         assignTargets();
 
-        // Функция для получения позиций точек для отображения времени
+        // Function to get point positions for displaying time
         function getTimePositions() {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
@@ -477,7 +477,7 @@
             const positions = [];
             const digitWidth = 5;
             const digitHeight = 7;
-            const pixelSize = Math.min(canvas.width, canvas.height) / 50; // Адаптивный размер
+            const pixelSize = Math.min(canvas.width, canvas.height) / 50; // Adaptive size
             const spacing = 3;
 
             let offsetX = 0;
@@ -492,7 +492,7 @@
                 for (let row = 0; row < digitHeight; row++) {
                     for (let col = 0; col < digitWidth; col++) {
                         if (pattern[row][col] === 1) {
-                            // Создаем несколько частиц для каждой точки паттерна (для толщины линий)
+                            // Create multiple particles for each pattern point (for line thickness)
                             for (let p = 0; p < PARTICLES_PER_POINT; p++) {
                                 const offsetAmount = PARTICLE_SIZE * 0.8;
                                 const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
@@ -511,10 +511,10 @@
             return positions;
         }
 
-        // Функция для генерации случайного набора букв
+        // Function to generate random set of letters
         function generateRandomLetters() {
             const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const length = Math.floor(Math.random() * 8) + 3; // От 3 до 10
+            const length = Math.floor(Math.random() * 8) + 3; // From 3 to 10
             let result = '';
             for (let i = 0; i < length; i++) {
                 result += letters[Math.floor(Math.random() * letters.length)];
@@ -522,12 +522,12 @@
             return result;
         }
 
-        // Функция для получения позиций точек для отображения случайных букв
+        // Function to get point positions for displaying random letters
         function getRandomLettersPositions() {
             const positions = [];
             const digitWidth = 5;
             const digitHeight = 7;
-            const pixelSize = Math.min(canvas.width, canvas.height) / 50; // Адаптивный размер
+            const pixelSize = Math.min(canvas.width, canvas.height) / 50; // Adaptive size
             const spacing = 3;
 
             let offsetX = 0;
@@ -542,7 +542,7 @@
                 for (let row = 0; row < digitHeight; row++) {
                     for (let col = 0; col < digitWidth; col++) {
                         if (pattern[row][col] === 1) {
-                            // Создаем несколько частиц для каждой точки паттерна (для толщины линий)
+                            // Create multiple particles for each pattern point (for line thickness)
                             for (let p = 0; p < PARTICLES_PER_POINT; p++) {
                                 const offsetAmount = PARTICLE_SIZE * 0.8;
                                 const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
@@ -561,44 +561,67 @@
             return positions;
         }
 
-        // Назначение целевых позиций частицам
+        // Assign target positions to particles
         function assignTargets() {
             let positions;
 
             if (showTime) {
                 positions = getTimePositions();
             } else {
-                // Генерируем новый случайный текст
+                // Generate new random text
                 currentRandomText = generateRandomLetters();
                 positions = getRandomLettersPositions();
             }
 
-            // Перемешиваем частицы для более интересного эффекта
-            const shuffledParticles = [...particles].sort(() => Math.random() - 0.5);
+            // Assign nearest available particle to each position
+            const availableParticles = [...particles];
+            const assignments = [];
 
-            for (let i = 0; i < particles.length; i++) {
-                if (i < positions.length) {
-                    shuffledParticles[i].targetX = positions[i].x;
-                    shuffledParticles[i].targetY = positions[i].y;
-                    shuffledParticles[i].homeX = positions[i].x;
-                    shuffledParticles[i].homeY = positions[i].y;
-                } else {
-                    // Остальные частицы идут в случайные места
-                    shuffledParticles[i].targetX = Math.random() * canvas.width;
-                    shuffledParticles[i].targetY = Math.random() * canvas.height;
-                    shuffledParticles[i].homeX = shuffledParticles[i].targetX;
-                    shuffledParticles[i].homeY = shuffledParticles[i].targetY;
+            for (let i = 0; i < positions.length; i++) {
+                const targetPos = positions[i];
+                let nearestIndex = 0;
+                let minDistance = Infinity;
+
+                // Find nearest available particle
+                for (let j = 0; j < availableParticles.length; j++) {
+                    const particle = availableParticles[j];
+                    const dx = particle.x - targetPos.x;
+                    const dy = particle.y - targetPos.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestIndex = j;
+                    }
                 }
+
+                // Assign nearest particle to this position
+                const particle = availableParticles[nearestIndex];
+                particle.targetX = targetPos.x;
+                particle.targetY = targetPos.y;
+                particle.homeX = targetPos.x;
+                particle.homeY = targetPos.y;
+
+                // Remove assigned particle from available list
+                availableParticles.splice(nearestIndex, 1);
+            }
+
+            // Remaining particles go to random places
+            for (let i = 0; i < availableParticles.length; i++) {
+                availableParticles[i].targetX = Math.random() * canvas.width;
+                availableParticles[i].targetY = Math.random() * canvas.height;
+                availableParticles[i].homeX = availableParticles[i].targetX;
+                availableParticles[i].homeY = availableParticles[i].targetY;
             }
         }
 
-        // Начальное время анимации
+        // Initial animation time
         let startTime = Date.now();
 
-        // Переменная для отслеживания последнего обновления целей
+        // Variable to track last target update
         let lastUpdate = 0;
 
-        // Главный цикл анимации
+        // Main animation loop
         function animate() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -607,10 +630,10 @@
             const cycleTime = elapsed % CYCLE_DURATION;
 
             if (cycleTime < GATHER_DURATION) {
-                // Фаза сборки - частицы плавно движутся к своим домашним позициям
+                // Gathering phase - particles smoothly move to their home positions
                 if (cycleTime < 100 && lastUpdate !== 0) {
-                    // Переключаем режим (время/буквы) и обновляем цели в начале фазы сборки
-                    showTime = !showTime; // Чередуем между временем и буквами
+                    // Switch mode (time/letters) and update targets at the beginning of gathering phase
+                    showTime = !showTime; // Alternate between time and letters
                     assignTargets();
                     lastUpdate = 0;
                     cycleCount++;
@@ -622,9 +645,9 @@
                 });
 
             } else if (cycleTime < GATHER_DURATION + TREMBLE_DURATION) {
-                // Фаза дрожания - частицы дрожат в домашних позициях
+                // Trembling phase - particles tremble in their home positions
                 if (lastUpdate === 0) {
-                    // Фиксируем домашние позиции один раз в начале фазы
+                    // Fix home positions once at the beginning of the phase
                     particles.forEach(particle => {
                         particle.homeX = particle.x;
                         particle.homeY = particle.y;
@@ -638,9 +661,9 @@
                 });
 
             } else if (cycleTime < GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION) {
-                // Фаза разброса - частицы плавно начинают разбегаться
+                // Scattering phase - particles smoothly start to scatter
                 if (lastUpdate === 1) {
-                    // Инициализируем очень плавные случайные скорости
+                    // Initialize very smooth random velocities
                     particles.forEach(particle => {
                         particle.vx = (Math.random() - 0.5) * 0.2;
                         particle.vy = (Math.random() - 0.5) * 0.2;
@@ -648,7 +671,7 @@
                     lastUpdate = 2;
                 }
 
-                // Постепенно увеличиваем скорость от очень медленной к нормальной
+                // Gradually increase speed from very slow to normal
                 const scatterProgress = (cycleTime - GATHER_DURATION - TREMBLE_DURATION) / SCATTER_DURATION;
                 const speedMultiplier = 0.2 + scatterProgress * 0.8;
 
@@ -658,7 +681,7 @@
                 });
 
             } else {
-                // Фаза случайного движения - частицы движутся свободно
+                // Random movement phase - particles move freely
                 if (lastUpdate === 2) {
                     lastUpdate = 3;
                 }
@@ -672,13 +695,13 @@
             requestAnimationFrame(animate);
         }
 
-        // Обработка изменения размера окна
+        // Handle window resize
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
 
-        // Запуск анимации
+        // Start animation
         animate();
     </script>
 </body>
