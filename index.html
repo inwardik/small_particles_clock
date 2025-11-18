@@ -31,12 +31,12 @@
         canvas.height = window.innerHeight;
 
         // Константы
-        const PARTICLE_COUNT = 2000;
+        const PARTICLE_COUNT = 400;
         const PARTICLE_SIZE = 3;
-        const PARTICLES_PER_POINT = 2; // Количество частиц на каждую точку паттерна для толщины линий
-        const GATHER_DURATION = 3000; // Длительность сборки в мс
+        const PARTICLES_PER_POINT = 3; // Количество частиц на каждую точку паттерна для толщины линий
+        const GATHER_DURATION = 20000; // Длительность сборки в мс
         const TREMBLE_DURATION = 4000; // Длительность дрожания в мс
-        const SCATTER_DURATION = 3000; // Длительность разброса в мс
+        const SCATTER_DURATION = 5000; // Длительность разброса в мс
         const RANDOM_MOVEMENT_DURATION = 6000; // Случайное движение 6 секунд
         const CYCLE_DURATION = GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION + RANDOM_MOVEMENT_DURATION;
 
@@ -167,7 +167,7 @@
                 this.vy += (Math.random() - 0.5) * 0.05;
 
                 // Ограничиваем максимальную скорость (уменьшили для возможности следить за частицей)
-                const maxSpeed = 0.8 * slowdown;
+                const maxSpeed = 2 * slowdown;
                 this.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.vx));
                 this.vy = Math.max(-maxSpeed, Math.min(maxSpeed, this.vy));
 
@@ -186,15 +186,15 @@
             }
 
             // Движение к целевой позиции
-            moveToTarget(speed = 0.05) {
+            moveToTarget(speed = 0.5) {
                 const dx = this.targetX - this.x;
                 const dy = this.targetY - this.y;
-                this.x += dx * speed;
-                this.y += dy * speed;
+                this.x += dx / 5 * speed;
+                this.y += dy / 5 * speed;
 
                 // Плавно замедляем линейную скорость при приближении к цели
-                this.vx *= 0.95;
-                this.vy *= 0.95;
+                this.vx *= 0.99;
+                this.vy *= 0.99;
             }
 
             // Дрожание в домашней позиции
@@ -318,7 +318,7 @@
                 }
 
                 particles.forEach(particle => {
-                    particle.moveToTarget(0.06);
+                    particle.moveToTarget(0.02);
                     particle.draw();
                 });
 
