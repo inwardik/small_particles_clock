@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Часы из частиц</title>
+    <title>Particle clock</title>
     <style>
         body {
             margin: 0;
@@ -392,6 +392,7 @@
                 this.trembleOffsetY = 0;
                 this.tremblePhase = Math.random() * Math.PI * 2; // Random initial phase
                 this.color = `hsl(${Math.random() * 60 + 180}, 70%, 60%)`;
+                this.isActive = false; // Whether particle is used in current pattern
             }
 
             // Random movement with smooth deceleration
@@ -601,17 +602,28 @@
                 particle.targetY = targetPos.y;
                 particle.homeX = targetPos.x;
                 particle.homeY = targetPos.y;
+                particle.isActive = true; // Mark as active (used in pattern)
 
                 // Remove assigned particle from available list
                 availableParticles.splice(nearestIndex, 1);
             }
 
-            // Remaining particles go to random places
+            // Remaining particles continue moving in their direction
             for (let i = 0; i < availableParticles.length; i++) {
-                availableParticles[i].targetX = Math.random() * canvas.width;
-                availableParticles[i].targetY = Math.random() * canvas.height;
-                availableParticles[i].homeX = availableParticles[i].targetX;
-                availableParticles[i].homeY = availableParticles[i].targetY;
+                const particle = availableParticles[i];
+                particle.isActive = false; // Mark as inactive (not used in pattern)
+
+                // Set target to current position so they continue their movement
+                particle.targetX = particle.x;
+                particle.targetY = particle.y;
+                particle.homeX = particle.x;
+                particle.homeY = particle.y;
+
+                // If particle has no velocity yet, give it some initial velocity
+                if (particle.vx === 0 && particle.vy === 0) {
+                    particle.vx = (Math.random() - 0.5) * 2;
+                    particle.vy = (Math.random() - 0.5) * 2;
+                }
             }
         }
 
@@ -630,7 +642,7 @@
             const cycleTime = elapsed % CYCLE_DURATION;
 
             if (cycleTime < GATHER_DURATION) {
-                // Gathering phase - particles smoothly move to their home positions
+                // Gathering phase - active particles smoothly move to their home positions
                 if (cycleTime < 100 && lastUpdate !== 0) {
                     // Switch mode (time/letters) and update targets at the beginning of gathering phase
                     showTime = !showTime; // Alternate between time and letters
@@ -640,33 +652,47 @@
                 }
 
                 particles.forEach(particle => {
-                    particle.moveToTarget(0.02);
+                    if (particle.isActive) {
+                        particle.moveToTarget(0.02);
+                    } else {
+                        // Inactive particles continue their random movement
+                        particle.moveRandomly(1);
+                    }
                     particle.draw();
                 });
 
             } else if (cycleTime < GATHER_DURATION + TREMBLE_DURATION) {
-                // Trembling phase - particles tremble in their home positions
+                // Trembling phase - active particles tremble in their home positions
                 if (lastUpdate === 0) {
-                    // Fix home positions once at the beginning of the phase
+                    // Fix home positions once at the beginning of the phase for active particles
                     particles.forEach(particle => {
-                        particle.homeX = particle.x;
-                        particle.homeY = particle.y;
+                        if (particle.isActive) {
+                            particle.homeX = particle.x;
+                            particle.homeY = particle.y;
+                        }
                     });
                     lastUpdate = 1;
                 }
 
                 particles.forEach(particle => {
-                    particle.tremble(cycleTime);
+                    if (particle.isActive) {
+                        particle.tremble(cycleTime);
+                    } else {
+                        // Inactive particles continue their random movement
+                        particle.moveRandomly(1);
+                    }
                     particle.draw();
                 });
 
             } else if (cycleTime < GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION) {
-                // Scattering phase - particles smoothly start to scatter
+                // Scattering phase - active particles smoothly start to scatter
                 if (lastUpdate === 1) {
-                    // Initialize very smooth random velocities
+                    // Initialize very smooth random velocities for active particles
                     particles.forEach(particle => {
-                        particle.vx = (Math.random() - 0.5) * 0.2;
-                        particle.vy = (Math.random() - 0.5) * 0.2;
+                        if (particle.isActive) {
+                            particle.vx = (Math.random() - 0.5) * 0.2;
+                            particle.vy = (Math.random() - 0.5) * 0.2;
+                        }
                     });
                     lastUpdate = 2;
                 }
@@ -676,12 +702,17 @@
                 const speedMultiplier = 0.2 + scatterProgress * 0.8;
 
                 particles.forEach(particle => {
-                    particle.moveRandomly(speedMultiplier);
+                    if (particle.isActive) {
+                        particle.moveRandomly(speedMultiplier);
+                    } else {
+                        // Inactive particles continue their random movement at normal speed
+                        particle.moveRandomly(1);
+                    }
                     particle.draw();
                 });
 
             } else {
-                // Random movement phase - particles move freely
+                // Random movement phase - all particles move freely
                 if (lastUpdate === 2) {
                     lastUpdate = 3;
                 }
