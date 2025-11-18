@@ -33,6 +33,7 @@
         // Константы
         const PARTICLE_COUNT = 2000;
         const PARTICLE_SIZE = 3;
+        const PARTICLES_PER_POINT = 2; // Количество частиц на каждую точку паттерна для толщины линий
         const GATHER_DURATION = 3000; // Длительность сборки в мс
         const TREMBLE_DURATION = 4000; // Длительность дрожания в мс
         const SCATTER_DURATION = 3000; // Длительность разброса в мс
@@ -151,8 +152,8 @@
                 this.targetY = this.y;
                 this.homeX = this.x; // Домашняя позиция для дрожания
                 this.homeY = this.y;
-                this.vx = (Math.random() - 0.5) * 2;
-                this.vy = (Math.random() - 0.5) * 2;
+                this.vx = 0; // Начинаем без движения
+                this.vy = 0; // Начинаем без движения
                 this.trembleOffsetX = 0;
                 this.trembleOffsetY = 0;
                 this.tremblePhase = Math.random() * Math.PI * 2; // Случайная начальная фаза
@@ -161,12 +162,12 @@
 
             // Случайное движение с плавным замедлением
             moveRandomly(slowdown = 1) {
-                // Плавно изменяем скорость
-                this.vx += (Math.random() - 0.5) * 0.1;
-                this.vy += (Math.random() - 0.5) * 0.1;
+                // Плавно изменяем скорость (уменьшили изменение для более плавного движения)
+                this.vx += (Math.random() - 0.5) * 0.05;
+                this.vy += (Math.random() - 0.5) * 0.05;
 
-                // Ограничиваем максимальную скорость
-                const maxSpeed = 2 * slowdown;
+                // Ограничиваем максимальную скорость (уменьшили для возможности следить за частицей)
+                const maxSpeed = 0.8 * slowdown;
                 this.vx = Math.max(-maxSpeed, Math.min(maxSpeed, this.vx));
                 this.vy = Math.max(-maxSpeed, Math.min(maxSpeed, this.vy));
 
@@ -223,6 +224,9 @@
             particles.push(new Particle());
         }
 
+        // Назначаем цели сразу, чтобы избежать начального взрыва
+        assignTargets();
+
         // Функция для получения позиций точек для отображения времени
         function getTimePositions() {
             const now = new Date();
@@ -249,10 +253,15 @@
                 for (let row = 0; row < digitHeight; row++) {
                     for (let col = 0; col < digitWidth; col++) {
                         if (pattern[row][col] === 1) {
-                            positions.push({
-                                x: startX + offsetX + col * pixelSize,
-                                y: startY + row * pixelSize
-                            });
+                            // Создаем несколько частиц для каждой точки паттерна (для толщины линий)
+                            for (let p = 0; p < PARTICLES_PER_POINT; p++) {
+                                const offsetAmount = PARTICLE_SIZE * 0.8;
+                                const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
+                                positions.push({
+                                    x: startX + offsetX + col * pixelSize + Math.cos(angle) * offsetAmount,
+                                    y: startY + row * pixelSize + Math.sin(angle) * offsetAmount
+                                });
+                            }
                         }
                     }
                 }
@@ -332,17 +341,17 @@
             } else if (cycleTime < GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION) {
                 // Фаза разброса - частицы плавно начинают разбегаться
                 if (lastUpdate === 1) {
-                    // Инициализируем плавные случайные скорости
+                    // Инициализируем очень плавные случайные скорости
                     particles.forEach(particle => {
-                        particle.vx = (Math.random() - 0.5) * 1;
-                        particle.vy = (Math.random() - 0.5) * 1;
+                        particle.vx = (Math.random() - 0.5) * 0.2;
+                        particle.vy = (Math.random() - 0.5) * 0.2;
                     });
                     lastUpdate = 2;
                 }
 
-                // Постепенно увеличиваем скорость от медленной к нормальной
+                // Постепенно увеличиваем скорость от очень медленной к нормальной
                 const scatterProgress = (cycleTime - GATHER_DURATION - TREMBLE_DURATION) / SCATTER_DURATION;
-                const speedMultiplier = 0.3 + scatterProgress * 0.7;
+                const speedMultiplier = 0.2 + scatterProgress * 0.8;
 
                 particles.forEach(particle => {
                     particle.moveRandomly(speedMultiplier);
