@@ -463,6 +463,8 @@
         let showTime = true; // Start with time
         let currentRandomText = ''; // Current random text
         let cycleCount = 0; // Cycle counter
+        let serverData = null; // Data from server
+        const SERVER_URL = 'http://localhost:8000/data'; // Server endpoint
 
         // Assign targets immediately to avoid initial explosion
         assignTargets();
@@ -510,6 +512,24 @@
             }
 
             return positions;
+        }
+
+        // Function to fetch data from server
+        async function fetchServerData() {
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return data;
+                }
+            } catch (error) {
+                console.log('Server request failed:', error);
+            }
+            return null;
         }
 
         // Function to generate random set of letters
@@ -562,16 +582,51 @@
             return positions;
         }
 
+        // Function to get point positions from geo coordinates
+        function getGeoPositions(geoData) {
+            const positions = [];
+
+            // Convert geo coordinates to screen positions
+            // Assuming geo data is in format [[x1, y1], [x2, y2], ...]
+            for (let i = 0; i < geoData.length; i++) {
+                const [x, y] = geoData[i];
+
+                // Create multiple particles for each geo point (for visibility)
+                for (let p = 0; p < PARTICLES_PER_POINT; p++) {
+                    const offsetAmount = PARTICLE_SIZE * 0.8;
+                    const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
+                    positions.push({
+                        x: x + Math.cos(angle) * offsetAmount,
+                        y: y + Math.sin(angle) * offsetAmount
+                    });
+                }
+            }
+
+            return positions;
+        }
+
         // Assign target positions to particles
-        function assignTargets() {
+        async function assignTargets() {
             let positions;
 
             if (showTime) {
                 positions = getTimePositions();
             } else {
-                // Generate new random text
-                currentRandomText = generateRandomLetters();
-                positions = getRandomLettersPositions();
+                // Try to fetch data from server first
+                serverData = await fetchServerData();
+
+                if (serverData && serverData.type === 'text') {
+                    // Use text data from server
+                    currentRandomText = serverData.data;
+                    positions = getRandomLettersPositions();
+                } else if (serverData && serverData.type === 'geo') {
+                    // Use geo data from server
+                    positions = getGeoPositions(serverData.data);
+                } else {
+                    // Fallback to random text if server is unavailable
+                    currentRandomText = generateRandomLetters();
+                    positions = getRandomLettersPositions();
+                }
             }
 
             // Assign nearest available particle to each position
