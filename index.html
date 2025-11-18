@@ -31,8 +31,8 @@
         canvas.height = window.innerHeight;
 
         // Константы
-        const PARTICLE_COUNT = 400;
-        const PARTICLE_SIZE = 3;
+        const PARTICLE_COUNT = 600;
+        const PARTICLE_SIZE = 2;
         const PARTICLES_PER_POINT = 3; // Количество частиц на каждую точку паттерна для толщины линий
         const GATHER_DURATION = 20000; // Длительность сборки в мс
         const TREMBLE_DURATION = 4000; // Длительность дрожания в мс
@@ -458,13 +458,13 @@
             particles.push(new Particle());
         }
 
-        // Назначаем цели сразу, чтобы избежать начального взрыва
-        assignTargets();
-
         // Переменные для чередования
         let showTime = true; // Начинаем с времени
         let currentRandomText = ''; // Текущий случайный текст
         let cycleCount = 0; // Счетчик циклов
+
+        // Назначаем цели сразу, чтобы избежать начального взрыва
+        assignTargets();
 
         // Функция для получения позиций точек для отображения времени
         function getTimePositions() {
