@@ -35,11 +35,15 @@
         const PARTICLE_SIZE = 2;
         const PARTICLES_PER_TEXT_POINT = 3; // Number of particles per text pattern point for line thickness
         const PARTICLES_PER_GEO_POINT = 1; // Number of particles per geo/image point (default 1)
-        const GATHER_DURATION = 20000; // Gathering duration in ms
-        const TREMBLE_DURATION = 4000; // Trembling duration in ms
+        const DEFAULT_DISPLAY_TIME = 24; // Default display time in seconds (gather + tremble)
         const SCATTER_DURATION = 5000; // Scattering duration in ms
         const RANDOM_MOVEMENT_DURATION = 6000; // Random movement 6 seconds
-        const CYCLE_DURATION = GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION + RANDOM_MOVEMENT_DURATION;
+
+        // Variables for dynamic durations (can be changed by server)
+        let currentDisplayTime = DEFAULT_DISPLAY_TIME; // Current display time in seconds
+        let GATHER_DURATION = 20000; // Gathering duration in ms
+        let TREMBLE_DURATION = 4000; // Trembling duration in ms
+        let CYCLE_DURATION = GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION + RANDOM_MOVEMENT_DURATION;
 
         // Define digits as points on a 7x5 grid
         const digitPatterns = {
@@ -375,6 +379,24 @@
                 [0,1,0,0,0],
                 [1,0,0,0,0],
                 [1,1,1,1,1]
+            ],
+            '!': [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            ' ': [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
             ]
         };
 
@@ -549,33 +571,62 @@
             const digitHeight = 7;
             const pixelSize = Math.min(canvas.width, canvas.height) / 50; // Adaptive size
             const spacing = 3;
+            const lineSpacing = 2; // Spacing between lines in characters
 
-            let offsetX = 0;
-            const totalWidth = (digitWidth * pixelSize + spacing * pixelSize) * currentRandomText.length - spacing * pixelSize;
-            const startX = (canvas.width - totalWidth) / 2;
-            const startY = (canvas.height - digitHeight * pixelSize) / 2;
+            // Split text by newline character
+            const lines = currentRandomText.split('\n');
 
-            for (let i = 0; i < currentRandomText.length; i++) {
-                const char = currentRandomText[i];
-                const pattern = digitPatterns[char];
+            // Calculate maximum line width for centering
+            let maxLineWidth = 0;
+            for (let line of lines) {
+                if (line.length > maxLineWidth) {
+                    maxLineWidth = line.length;
+                }
+            }
 
-                for (let row = 0; row < digitHeight; row++) {
-                    for (let col = 0; col < digitWidth; col++) {
-                        if (pattern[row][col] === 1) {
-                            // Create multiple particles for each pattern point (for line thickness)
-                            for (let p = 0; p < PARTICLES_PER_TEXT_POINT; p++) {
-                                const offsetAmount = PARTICLE_SIZE * 0.8;
-                                const angle = (p / PARTICLES_PER_TEXT_POINT) * Math.PI * 2;
-                                positions.push({
-                                    x: startX + offsetX + col * pixelSize + Math.cos(angle) * offsetAmount,
-                                    y: startY + row * pixelSize + Math.sin(angle) * offsetAmount
-                                });
+            // Calculate total text block dimensions
+            const totalWidth = (digitWidth * pixelSize + spacing * pixelSize) * maxLineWidth - spacing * pixelSize;
+            const totalHeight = (digitHeight * pixelSize + lineSpacing * pixelSize) * lines.length - lineSpacing * pixelSize;
+
+            // Center the entire text block
+            const blockStartX = (canvas.width - totalWidth) / 2;
+            const blockStartY = (canvas.height - totalHeight) / 2;
+
+            // Process each line
+            for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                const line = lines[lineIndex];
+                const lineWidth = (digitWidth * pixelSize + spacing * pixelSize) * line.length - spacing * pixelSize;
+
+                // Center each line horizontally
+                const startX = blockStartX + (totalWidth - lineWidth) / 2;
+                const startY = blockStartY + lineIndex * (digitHeight * pixelSize + lineSpacing * pixelSize);
+
+                let offsetX = 0;
+
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const pattern = digitPatterns[char];
+
+                    if (pattern) {
+                        for (let row = 0; row < digitHeight; row++) {
+                            for (let col = 0; col < digitWidth; col++) {
+                                if (pattern[row][col] === 1) {
+                                    // Create multiple particles for each pattern point (for line thickness)
+                                    for (let p = 0; p < PARTICLES_PER_TEXT_POINT; p++) {
+                                        const offsetAmount = PARTICLE_SIZE * 0.8;
+                                        const angle = (p / PARTICLES_PER_TEXT_POINT) * Math.PI * 2;
+                                        positions.push({
+                                            x: startX + offsetX + col * pixelSize + Math.cos(angle) * offsetAmount,
+                                            y: startY + row * pixelSize + Math.sin(angle) * offsetAmount
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
-                }
 
-                offsetX += (digitWidth + spacing) * pixelSize;
+                    offsetX += (digitWidth + spacing) * pixelSize;
+                }
             }
 
             return positions;
@@ -610,6 +661,24 @@
 
             // Always try to fetch data from server first
             serverData = await fetchServerData();
+
+            // Update display time if provided by server
+            if (serverData && serverData.time) {
+                currentDisplayTime = serverData.time; // time in seconds
+                // Calculate new durations: 80% gather, 20% tremble
+                const totalDisplayMs = currentDisplayTime * 1000;
+                GATHER_DURATION = Math.floor(totalDisplayMs * 0.8);
+                TREMBLE_DURATION = Math.floor(totalDisplayMs * 0.2);
+                CYCLE_DURATION = GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION + RANDOM_MOVEMENT_DURATION;
+                // Reset startTime to restart cycle with new durations
+                startTime = Date.now();
+            } else {
+                // Use default display time
+                currentDisplayTime = DEFAULT_DISPLAY_TIME;
+                GATHER_DURATION = 20000;
+                TREMBLE_DURATION = 4000;
+                CYCLE_DURATION = GATHER_DURATION + TREMBLE_DURATION + SCATTER_DURATION + RANDOM_MOVEMENT_DURATION;
+            }
 
             if (serverData && serverData.type === 'text') {
                 // Use text data from server
