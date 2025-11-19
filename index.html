@@ -470,7 +470,6 @@
         }
 
         // Variables for alternation
-        let showTime = true; // Start with time
         let currentRandomText = ''; // Current random text
         let cycleCount = 0; // Cycle counter
         let serverData = null; // Data from server
@@ -542,16 +541,6 @@
             return null;
         }
 
-        // Function to generate random set of letters
-        function generateRandomLetters() {
-            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const length = Math.floor(Math.random() * 8) + 3; // From 3 to 10
-            let result = '';
-            for (let i = 0; i < length; i++) {
-                result += letters[Math.floor(Math.random() * letters.length)];
-            }
-            return result;
-        }
 
         // Function to get point positions for displaying random letters
         function getRandomLettersPositions() {
@@ -619,24 +608,22 @@
         async function assignTargets() {
             let positions;
 
-            if (showTime) {
+            // Always try to fetch data from server first
+            serverData = await fetchServerData();
+
+            if (serverData && serverData.type === 'text') {
+                // Use text data from server
+                currentRandomText = serverData.data;
+                positions = getRandomLettersPositions();
+            } else if (serverData && serverData.type === 'geo') {
+                // Use geo data from server
+                positions = getGeoPositions(serverData.data);
+            } else if (serverData && serverData.type === 'time') {
+                // Server requested to show time
                 positions = getTimePositions();
             } else {
-                // Try to fetch data from server first
-                serverData = await fetchServerData();
-
-                if (serverData && serverData.type === 'text') {
-                    // Use text data from server
-                    currentRandomText = serverData.data;
-                    positions = getRandomLettersPositions();
-                } else if (serverData && serverData.type === 'geo') {
-                    // Use geo data from server
-                    positions = getGeoPositions(serverData.data);
-                } else {
-                    // Fallback to random text if server is unavailable
-                    currentRandomText = generateRandomLetters();
-                    positions = getRandomLettersPositions();
-                }
+                // Fallback to time if server is unavailable or returns unknown type
+                positions = getTimePositions();
             }
 
             // Assign nearest available particle to each position
@@ -709,8 +696,7 @@
             if (cycleTime < GATHER_DURATION) {
                 // Gathering phase - active particles smoothly move to their home positions
                 if (cycleTime < 100 && lastUpdate !== 0) {
-                    // Switch mode (time/letters) and update targets at the beginning of gathering phase
-                    showTime = !showTime; // Alternate between time and letters
+                    // Update targets at the beginning of gathering phase
                     assignTargets();
                     lastUpdate = 0;
                     cycleCount++;
