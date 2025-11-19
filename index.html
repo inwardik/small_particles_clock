@@ -33,7 +33,8 @@
         // Constants
         const PARTICLE_COUNT = 600;
         const PARTICLE_SIZE = 2;
-        const PARTICLES_PER_POINT = 3; // Number of particles per pattern point for line thickness
+        const PARTICLES_PER_TEXT_POINT = 3; // Number of particles per text pattern point for line thickness
+        const PARTICLES_PER_GEO_POINT = 1; // Number of particles per geo/image point (default 1)
         const GATHER_DURATION = 20000; // Gathering duration in ms
         const TREMBLE_DURATION = 4000; // Trembling duration in ms
         const SCATTER_DURATION = 5000; // Scattering duration in ms
@@ -496,9 +497,9 @@
                     for (let col = 0; col < digitWidth; col++) {
                         if (pattern[row][col] === 1) {
                             // Create multiple particles for each pattern point (for line thickness)
-                            for (let p = 0; p < PARTICLES_PER_POINT; p++) {
+                            for (let p = 0; p < PARTICLES_PER_TEXT_POINT; p++) {
                                 const offsetAmount = PARTICLE_SIZE * 0.8;
-                                const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
+                                const angle = (p / PARTICLES_PER_TEXT_POINT) * Math.PI * 2;
                                 positions.push({
                                     x: startX + offsetX + col * pixelSize + Math.cos(angle) * offsetAmount,
                                     y: startY + row * pixelSize + Math.sin(angle) * offsetAmount
@@ -564,9 +565,9 @@
                     for (let col = 0; col < digitWidth; col++) {
                         if (pattern[row][col] === 1) {
                             // Create multiple particles for each pattern point (for line thickness)
-                            for (let p = 0; p < PARTICLES_PER_POINT; p++) {
+                            for (let p = 0; p < PARTICLES_PER_TEXT_POINT; p++) {
                                 const offsetAmount = PARTICLE_SIZE * 0.8;
-                                const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
+                                const angle = (p / PARTICLES_PER_TEXT_POINT) * Math.PI * 2;
                                 positions.push({
                                     x: startX + offsetX + col * pixelSize + Math.cos(angle) * offsetAmount,
                                     y: startY + row * pixelSize + Math.sin(angle) * offsetAmount
@@ -591,10 +592,10 @@
             for (let i = 0; i < geoData.length; i++) {
                 const [x, y] = geoData[i];
 
-                // Create multiple particles for each geo point (for visibility)
-                for (let p = 0; p < PARTICLES_PER_POINT; p++) {
+                // Create particles for each geo point (default 1 per point for images)
+                for (let p = 0; p < PARTICLES_PER_GEO_POINT; p++) {
                     const offsetAmount = PARTICLE_SIZE * 0.8;
-                    const angle = (p / PARTICLES_PER_POINT) * Math.PI * 2;
+                    const angle = (p / PARTICLES_PER_GEO_POINT) * Math.PI * 2;
                     positions.push({
                         x: x + Math.cos(angle) * offsetAmount,
                         y: y + Math.sin(angle) * offsetAmount
