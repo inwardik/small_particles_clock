@@ -6,12 +6,15 @@ The server returns objects from the list sequentially, cycling when it reaches t
 
 import json
 import os
+import sys
+import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
 # Global index to track current position in data array
 current_index = 0
 data_cache = []
+reload_flag = False
 
 
 def load_data():
@@ -75,24 +78,58 @@ class DataHandler(BaseHTTPRequestHandler):
         print(f"[{self.log_date_time_string()}] {format % args}")
 
 
+def keyboard_monitor():
+    """Monitor keyboard input for reload command"""
+    global reload_flag
+    while True:
+        try:
+            key = sys.stdin.read(1)
+            if key.lower() == 'r':
+                print("\n[RELOAD] Reloading server...")
+                reload_flag = True
+                break
+        except:
+            break
+
+
 def run_server(port=8000):
     """Start HTTP server"""
-    # Load data before starting server
-    if not load_data():
-        print("Failed to load data. Please ensure data.json exists.")
-        return
+    global reload_flag
 
-    server_address = ('', port)
-    httpd = HTTPServer(server_address, DataHandler)
+    while True:
+        reload_flag = False
 
-    print(f"Server started on http://localhost:{port}")
-    print(f"Endpoint: http://localhost:{port}/data")
-    print("Press Ctrl+C to stop the server")
+        # Load data before starting server
+        if not load_data():
+            print("Failed to load data. Please ensure data.json exists.")
+            return
 
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nServer stopped")
+        server_address = ('', port)
+        httpd = HTTPServer(server_address, DataHandler)
+
+        print(f"Server started on http://localhost:{port}")
+        print(f"Endpoint: http://localhost:{port}/data")
+        print("Press Ctrl+C to stop the server, or 'r' to reload")
+
+        # Start keyboard monitor thread
+        monitor_thread = threading.Thread(target=keyboard_monitor, daemon=True)
+        monitor_thread.start()
+
+        try:
+            # Check reload flag periodically
+            while not reload_flag:
+                httpd.handle_request()
+        except KeyboardInterrupt:
+            print("\nServer stopped")
+            break
+
+        if reload_flag:
+            print("Reloading data and restarting server...")
+            httpd.server_close()
+            continue
+        else:
+            httpd.server_close()
+            break
 
 
 if __name__ == '__main__':
