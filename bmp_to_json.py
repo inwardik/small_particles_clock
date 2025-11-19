@@ -7,7 +7,10 @@ This script reads a BMP file with white points on a black background and
 converts the coordinates of all white pixels into a JSON file.
 
 Usage:
-    python bmp_to_json.py <input_bmp_file>
+    python bmp_to_json.py <input_bmp_file> [--multiply N]
+
+Options:
+    --multiply N    Multiply coordinates by N (default: 3)
 
 Output:
     Creates out.json with format: {"type": "geo", "data": [[x1, y1], [x2, y2], ...]}
@@ -15,6 +18,7 @@ Output:
 
 import sys
 import json
+import argparse
 from PIL import Image
 
 
@@ -42,12 +46,13 @@ def is_white_pixel(pixel, threshold=200):
     return False
 
 
-def extract_white_points(image_path):
+def extract_white_points(image_path, multiply=1):
     """
     Extract coordinates of all white pixels from a BMP image.
 
     Args:
         image_path: Path to the BMP file
+        multiply: Multiplier for coordinates (default: 1)
 
     Returns:
         list: List of [x, y] coordinate pairs
@@ -72,7 +77,7 @@ def extract_white_points(image_path):
                 pixel = img.getpixel((x, y))
 
                 if is_white_pixel(pixel):
-                    white_points.append([x, y])
+                    white_points.append([x * multiply, y * multiply])
 
         return white_points
 
@@ -108,16 +113,24 @@ def save_to_json(points, output_file='out.json'):
 
 def main():
     """Main entry point"""
-    if len(sys.argv) != 2:
-        print("Usage: python bmp_to_json.py <input_bmp_file>")
-        print("\nExample:")
-        print("  python bmp_to_json.py image.bmp")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='Convert BMP image white points to JSON coordinates'
+    )
+    parser.add_argument(
+        'input_file',
+        help='Input BMP file path'
+    )
+    parser.add_argument(
+        '--multiply',
+        type=int,
+        default=3,
+        help='Multiply coordinates by this value (default: 3)'
+    )
 
-    input_file = sys.argv[1]
+    args = parser.parse_args()
 
-    print(f"Processing {input_file}...")
-    points = extract_white_points(input_file)
+    print(f"Processing {args.input_file} with multiply={args.multiply}...")
+    points = extract_white_points(args.input_file, args.multiply)
 
     if not points:
         print("Warning: No white points found in the image.")
