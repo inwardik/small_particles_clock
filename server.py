@@ -126,6 +126,8 @@ def run_server(port=8000):
         if reload_flag:
             print("Reloading data and restarting server...")
             httpd.server_close()
+            # Reset cursor to first element
+            current_index = 0
             continue
         else:
             httpd.server_close()
@@ -134,5 +136,5 @@ def run_server(port=8000):
 
 if __name__ == '__main__':
     # You can change the port here if needed
-    PORT = 8000
+    PORT = 1234
     run_server(PORT)

@@ -380,7 +380,7 @@
 
         // Particle class
         class Particle {
-            constructor() {
+            constructor(isChameleon = false) {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
                 this.targetX = this.x;
@@ -392,7 +392,9 @@
                 this.trembleOffsetX = 0;
                 this.trembleOffsetY = 0;
                 this.tremblePhase = Math.random() * Math.PI * 2; // Random initial phase
-                this.color = `hsl(${Math.random() * 60 + 180}, 70%, 60%)`;
+                this.isChameleon = isChameleon; // Whether this is a chameleon particle
+                this.hue = Math.random() * 360; // Current hue for chameleon particles
+                this.color = isChameleon ? `hsl(${this.hue}, 100%, 60%)` : `hsl(${Math.random() * 60 + 180}, 70%, 60%)`;
                 this.isActive = false; // Whether particle is used in current pattern
             }
 
@@ -447,6 +449,12 @@
 
             // Draw particle
             draw() {
+                // Update color for chameleon particles
+                if (this.isChameleon) {
+                    this.hue = (this.hue + 0.5) % 360; // Smooth color transition
+                    this.color = `hsl(${this.hue}, 100%, 60%)`;
+                }
+
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, PARTICLE_SIZE, 0, Math.PI * 2);
@@ -457,7 +465,8 @@
         // Create particles
         const particles = [];
         for (let i = 0; i < PARTICLE_COUNT; i++) {
-            particles.push(new Particle());
+            // Make the first particle a chameleon
+            particles.push(new Particle(i === 0));
         }
 
         // Variables for alternation
@@ -465,7 +474,7 @@
         let currentRandomText = ''; // Current random text
         let cycleCount = 0; // Cycle counter
         let serverData = null; // Data from server
-        const SERVER_URL = 'http://localhost:8000/data'; // Server endpoint
+        const SERVER_URL = 'http://localhost:1234/data'; // Server endpoint
 
         // Assign targets immediately to avoid initial explosion
         assignTargets();
@@ -711,8 +720,8 @@
                     if (particle.isActive) {
                         particle.moveToTarget(0.02);
                     } else {
-                        // Inactive particles continue their random movement
-                        particle.moveRandomly(1);
+                        // Inactive particles continue their random movement (2x slower)
+                        particle.moveRandomly(0.5);
                     }
                     particle.draw();
                 });
@@ -734,8 +743,8 @@
                     if (particle.isActive) {
                         particle.tremble(cycleTime);
                     } else {
-                        // Inactive particles continue their random movement
-                        particle.moveRandomly(1);
+                        // Inactive particles continue their random movement (2x slower)
+                        particle.moveRandomly(0.5);
                     }
                     particle.draw();
                 });
@@ -761,8 +770,8 @@
                     if (particle.isActive) {
                         particle.moveRandomly(speedMultiplier);
                     } else {
-                        // Inactive particles continue their random movement at normal speed
-                        particle.moveRandomly(1);
+                        // Inactive particles continue their random movement (2x slower)
+                        particle.moveRandomly(0.5);
                     }
                     particle.draw();
                 });
@@ -774,7 +783,8 @@
                 }
 
                 particles.forEach(particle => {
-                    particle.moveRandomly(1);
+                    // Inactive particles move 2x slower even in random movement phase
+                    particle.moveRandomly(particle.isActive ? 1 : 0.5);
                     particle.draw();
                 });
             }
